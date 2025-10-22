@@ -45,3 +45,9 @@ substitutions:
 
 # Aumenta o tempo limite total do build (download do modelo + deploy)
 timeout: '3600s' # 1 hora
+
+# --- AQUI ESTÁ A CORREÇÃO ---
+# Diz ao Cloud Build para enviar logs apenas para o Cloud Logging
+# e não tentar usar um bucket do GCS.
+options:
+  logging: CLOUD_LOGGING_ONLY
