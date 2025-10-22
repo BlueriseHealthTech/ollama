@@ -1,0 +1,47 @@
+steps:
+# Etapa 1: Construir a imagem (usando o Dockerfile que já existe)
+- name: 'gcr.io/cloud-builders/docker'
+  args:
+    - 'build'
+    - '-t'
+    - '${_REGION}-docker.pkg.dev/$PROJECT_ID/ai-inference/ollama:$COMMIT_SHA'
+    - '.'
+  # Aumenta o timeout desta etapa específica para o download do modelo
+  timeout: '1800s' # 30 minutos
+
+# Etapa 2: Enviar a imagem para o Artifact Registry
+- name: 'gcr.io/cloud-builders/docker'
+  args:
+    - 'push'
+    - '${_REGION}-docker.pkg.dev/$PROJECT_ID/ai-inference/ollama:$COMMIT_SHA'
+
+# Etapa 3: Implantar a nova imagem no Cloud Run
+- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+  entrypoint: gcloud
+  args:
+    - 'run'
+    - 'deploy'
+    - 'ollama-service' # O nome do seu serviço
+    - '--image=${_REGION}-docker.pkg.dev/$PROJECT_ID/ai-inference/ollama:$COMMIT_SHA' # A nova imagem que acabamos de construir
+    - '--region=${_REGION}'
+    - '--service-account=sa-ollama@${PROJECT_ID}.iam.gserviceaccount.com'
+    - '--memory=16Gi'
+    - '--cpu=8'
+    - '--concurrency=1'
+    - '--timeout=900s'
+    - '--min-instances=1'
+    - '--max-instances=25'
+    - '--no-cpu-throttling'
+    - '--no-allow-unauthenticated'
+    - '--port=11434'
+
+# Salva o nome da imagem construída
+images:
+  - '${_REGION}-docker.pkg.dev/$PROJECT_ID/ai-inference/ollama:$COMMIT_SHA'
+
+# Define as variáveis que usaremos
+substitutions:
+  _REGION: 'us-east4'
+
+# Aumenta o tempo limite total do build (download do modelo + deploy)
+timeout: '3600s' # 1 hora
