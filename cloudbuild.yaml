@@ -1,57 +1,40 @@
 steps:
-# Etapa 1: Construir a imagem (usando o Dockerfile que já existe)
-- name: 'gcr.io/cloud-builders/docker'
-  args:
-    - 'build'
-    - '-t'
-    - '${_REGION}-docker.pkg.dev/$PROJECT_ID/ai-inference/ollama:$COMMIT_SHA'
-    - '.'
-  # Aumenta o timeout desta etapa específica para o download do modelo
-  timeout: '1800s' # 30 minutos
+  # --- Build da Imagem (Isso vai demorar uns 5-10 min por causa do download dos modelos) ---
+  - name: 'gcr.io/cloud-builders/docker'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        docker build -t gcr.io/$PROJECT_ID/ollama-custom:$COMMIT_SHA \
+                     -t gcr.io/$PROJECT_ID/ollama-custom:latest .
+    timeout: 2400s # 40 minutos de limite (segurança para downloads lentos)
 
-# Etapa 2: Enviar a imagem para o Artifact Registry
-- name: 'gcr.io/cloud-builders/docker'
-  args:
-    - 'push'
-    - '${_REGION}-docker.pkg.dev/$PROJECT_ID/ai-inference/ollama:$COMMIT_SHA'
+  # --- Push para o Registry ---
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/ollama-custom:$COMMIT_SHA']
 
-# Etapa 3: Implantar a nova imagem no Cloud Run
-- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-  entrypoint: gcloud
-  args:
-    - 'run'
-    - 'deploy'
-    - 'ollama-service' # O nome do seu serviço
-    - '--image=${_REGION}-docker.pkg.dev/$PROJECT_ID/ai-inference/ollama:$COMMIT_SHA' # A nova imagem que acabamos de construir
-    - '--region=${_REGION}'
-    - '--service-account=sa-ollama@${PROJECT_ID}.iam.gserviceaccount.com'
-    - '--memory=16Gi'
-    - '--cpu=8'
-    - '--concurrency=1'
-    - '--timeout=900s'
-    - '--min-instances=1'
-    - '--max-instances=25'
-    - '--no-cpu-throttling'
-    - '--no-allow-unauthenticated'
-    - '--port=11434'
-    
-    # --- VARIÁVEIS DE AMBIENTE ADICIONADAS AQUI ---
-    - '--set-env-vars=OLLAMA_HOST=0.0.0.0,OLLAMA_MODELS=/models,OLLAMA_KEEP_ALIVE=24h'
-    # -----------------------------------------------
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/ollama-custom:latest']
 
-# Salva o nome da imagem construída
+  # --- Deploy no Cloud Run ---
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'services'
+      - 'update'
+      - 'ollama-service' # Nome do seu serviço
+      - '--image=gcr.io/$PROJECT_ID/ollama-custom:$COMMIT_SHA'
+      - '--region=us-east4'
+      - '--ingress=internal' # Mantém seguro (só backend acessa)
+      - '--cpu=4' # Ollama precisa de CPU para responder rápido
+      - '--memory=8Gi' # Modelos 7b precisam de memória
+      - '--no-cpu-throttling' # Importante para performance de IA
+      - '--min-instances=0' # Escala a zero para economizar
+      - '--max-instances=5'
+
 images:
-  - '${_REGION}-docker.pkg.dev/$PROJECT_ID/ai-inference/ollama:$COMMIT_SHA'
+  - 'gcr.io/$PROJECT_ID/ollama-custom:$COMMIT_SHA'
+  - 'gcr.io/$PROJECT_ID/ollama-custom:latest'
 
-# Define as variáveis que usaremos
-substitutions:
-  _REGION: 'us-east4'
-
-# Aumenta o tempo limite total do build (download do modelo + deploy)
-timeout: '3600s' # 1 hora
-
-# --- AQUI ESTÁ A CORREÇÃO ---
-# Diz ao Cloud Build para enviar logs apenas para o Cloud Logging
-# e não tentar usar um bucket do GCS.
-options:
-  logging: CLOUD_LOGGING_ONLY
+timeout: 3600s
