@@ -1,21 +1,19 @@
 FROM ollama/ollama:latest
 
-# 1. Variáveis para o momento do BUILD (para o servidor subir localmente e baixar os modelos)
+# 1. Variáveis para o momento do BUILD
 ENV OLLAMA_HOST=0.0.0.0:11434
 
-# 2. "Assando" os modelos na imagem
-# O 'nohup' garante que o processo não morra prematuramente.
+# 2. "Assando" o modelo qwen3:4b na imagem
+# Usamos nohup para garantir que o servidor não morra enquanto baixamos
 RUN nohup bash -c "ollama serve &" && \
     sleep 10 && \
-    echo "🔴 Baixando Modelo Primário..." && \
-    ollama pull qwen2.5:7b-instruct-q4_k_m && \
-    echo "🔵 Baixando Modelo Fallback..." && \
-    ollama pull qwen2.5:7b-instruct-q5_k_m
+    echo "🔴 Baixando qwen3:4b (Map/Reduce & Dev)..." && \
+    ollama pull qwen3:4b && \
+    sleep 5
 
 # 3. Configuração de Runtime (Cloud Run)
 ENV OLLAMA_KEEP_ALIVE=24h
 
-# ⚠️ O PULO DO GATO:
-# O Cloud Run passa a porta na variável $PORT.
-# O comando abaixo força o OLLAMA_HOST a usar essa porta dinâmica.
+# ⚠️ O PULO DO GATO (Mantido do seu original):
+# Força o Ollama a escutar na porta injetada pelo Cloud Run
 ENTRYPOINT ["/bin/sh", "-c", "export OLLAMA_HOST=0.0.0.0:$PORT && echo '🚀 Ollama iniciando na porta '$PORT && exec ollama serve"]
