@@ -1,6 +1,7 @@
 .DS_Store
 .vscode
 .env
+.env.local
 .venv
 .swp
 dist
@@ -15,3 +16,9 @@ __debug_bin*
 llama/build
 llama/vendor
 /ollama
+
+# Não ignorar arquivos de ambiente específicos (devem ser versionados)
+.env.sandbox
+.env.development
+.env.staging
+.env.production
