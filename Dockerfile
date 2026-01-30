@@ -15,16 +15,16 @@ ENV ENVIRONMENT=${ENV}
 
 # 2. "Assando" os modelos na imagem
 # Usamos nohup para garantir que o servidor não morra enquanto baixamos
-RUN nohup bash -c "ollama serve &" && \
+RUN bash -c 'nohup ollama serve > /tmp/ollama.log 2>&1 & \
     sleep 10 && \
-    echo "🔴 Baixando modelos para ambiente: ${ENV}..." && \
-    IFS=',' read -ra MODELS <<< "$OLLAMA_MODELS" && \
+    echo "🔴 Baixando modelos para ambiente: $ENV..." && \
+    IFS="," read -ra MODELS <<< "$OLLAMA_MODELS" && \
     for model in "${MODELS[@]}"; do \
         echo "📦 Baixando modelo: $model" && \
-        ollama pull "$model"; \
+        ollama pull "$model" || exit 1; \
     done && \
     echo "✅ Todos os modelos foram baixados com sucesso!" && \
-    sleep 5
+    sleep 5'
 
 # 3. Configuração de Runtime (Cloud Run)
 ENV OLLAMA_KEEP_ALIVE=24h
