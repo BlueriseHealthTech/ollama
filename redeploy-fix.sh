@@ -16,8 +16,8 @@ echo ""
 
 # Verificar argumentos
 if [ $# -eq 0 ]; then
-    echo -e "${RED}❌ Erro: Especifique o ambiente: sandbox, staging ou production${NC}"
-    echo "Uso: ./redeploy-fix.sh [sandbox|staging|production]"
+    echo -e "${RED}❌ Erro: Especifique o ambiente: developer, staging ou production${NC}"
+    echo "Uso: ./redeploy-fix.sh [developer|staging|production]"
     exit 1
 fi
 
@@ -25,7 +25,7 @@ ENV=$1
 
 # Configurações por ambiente
 case $ENV in
-    sandbox)
+    developer|dev)
         SERVICE_NAME="brh-ollama-dev"
         PROJECT_ID="brh-dev-469211"
         REGION="us-east4"

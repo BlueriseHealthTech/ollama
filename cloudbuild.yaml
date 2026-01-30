@@ -23,15 +23,20 @@ steps:
       - 'run'
       - 'services'
       - 'update'
-      - 'ollama-service' # Nome do seu serviço
+      - 'brh-ollama-dev' # Nome do serviço no developer
       - '--image=gcr.io/$PROJECT_ID/ollama-custom:$COMMIT_SHA'
       - '--region=us-east4'
-      - '--ingress=internal' # Mantém seguro (só backend acessa)
-      - '--cpu=4' # Ollama precisa de CPU para responder rápido
-      - '--memory=8Gi' # Modelos 7b precisam de memória
-      - '--no-cpu-throttling' # Importante para performance de IA
-      - '--min-instances=0' # Escala a zero para economizar
-      - '--max-instances=5'
+      - '--platform=managed'
+      - '--ingress=internal'
+      - '--cpu=6' # Ollama precisa de CPU para responder rápido
+      - '--memory=16Gi' # qwen3:4b precisa de pelo menos 8GB, usando 16GB para folga
+      - '--no-cpu-throttling'
+      - '--min-instances=1' # Manter 1 instância sempre ativa
+      - '--max-instances=3'
+      - '--timeout=600s' # 10 minutos
+      - '--concurrency=80'
+      - '--port=8080'
+      - '--set-env-vars=ENVIRONMENT=development,OLLAMA_KEEP_ALIVE=12h'
 
 images:
   - 'gcr.io/$PROJECT_ID/ollama-custom:$COMMIT_SHA'
