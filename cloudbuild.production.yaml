@@ -65,6 +65,7 @@ steps:
       - '--set-env-vars=ENVIRONMENT=${_ENV},OLLAMA_KEEP_ALIVE=24h'
       - '--no-allow-unauthenticated' # Produção requer autenticação
       - '--concurrency=80' # Controle de concorrência para produção
+      - '--port=8080'
     waitFor: ['push-sha', 'push-latest', 'push-prod-tag']
 
   # --- Health Check e Validação ---

@@ -29,10 +29,10 @@ RUN bash -c 'nohup ollama serve > /tmp/ollama.log 2>&1 & \
 # 3. Configuração de Runtime (Cloud Run)
 ENV OLLAMA_KEEP_ALIVE=24h
 
-# 4. Health check
+# 4. Health check (usa a PORT do Cloud Run ou 11434 como fallback)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -f http://localhost:11434/api/tags || exit 1
+    CMD curl -f http://localhost:${PORT:-11434}/api/tags || exit 1
 
 # ⚠️ O PULO DO GATO:
 # Força o Ollama a escutar na porta injetada pelo Cloud Run
-ENTRYPOINT ["/bin/sh", "-c", "export OLLAMA_HOST=0.0.0.0:${PORT:-11434} && echo '🚀 Ollama iniciando no ambiente: ${ENVIRONMENT}' && echo '🌐 Porta: ${PORT:-11434}' && exec ollama serve"]
+ENTRYPOINT ["/bin/sh", "-c", "export OLLAMA_HOST=0.0.0.0:${PORT:-11434} && echo '🚀 Ollama iniciando no ambiente: ${ENVIRONMENT}' && echo '🌐 Porta: ${PORT:-11434}' && echo '📡 OLLAMA_HOST: $OLLAMA_HOST' && exec ollama serve"]

@@ -58,6 +58,8 @@ steps:
       - '--timeout=3600s'
       - '--set-env-vars=ENVIRONMENT=${_ENV},OLLAMA_KEEP_ALIVE=12h'
       - '--allow-unauthenticated' # Sandbox pode ser menos restritivo
+      - '--concurrency=80'
+      - '--port=8080'
     waitFor: ['push-sha', 'push-latest']
 
 # Imagens resultantes

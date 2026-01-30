@@ -58,6 +58,8 @@ steps:
       - '--timeout=3600s'
       - '--set-env-vars=ENVIRONMENT=${_ENV},OLLAMA_KEEP_ALIVE=24h'
       - '--no-allow-unauthenticated' # Staging requer autenticação
+      - '--concurrency=80'
+      - '--port=8080'
     waitFor: ['push-sha', 'push-latest']
 
   # --- Teste de Health Check ---
