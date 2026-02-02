@@ -10,7 +10,7 @@ RUN mkdir -p /models && chmod 777 /models
 
 # Argumentos de Build
 ARG ENV=development
-ARG MODELS_LIST="qwen2.5:3b" 
+ARG MODELS_LIST="qwen3:4b" 
 # Nota: qwen3 ainda não é oficial na library padrão, ajustei para qwen2.5 ou use o nome exato se for custom
 
 LABEL environment="${ENV}"
