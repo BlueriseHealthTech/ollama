@@ -10,7 +10,7 @@ RUN mkdir -p /models && chmod 777 /models
 
 # Argumentos de Build
 ARG ENV=development
-ARG MODELS_LIST="qwen3:4b" 
+ARG MODELS_LIST="qwen3:4b qwen2.5:3b-instruct" 
 # Nota: qwen3 ainda não é oficial na library padrão, ajustei para qwen2.5 ou use o nome exato se for custom
 
 LABEL environment="${ENV}"
@@ -21,7 +21,10 @@ RUN bash -c 'nohup ollama serve > /dev/null 2>&1 & \
     PID=$! && \
     sleep 5 && \
     echo "🔴 Iniciando download dos modelos em $OLLAMA_MODELS..." && \
-    ollama pull '"$MODELS_LIST"' && \
+    for model in '"$MODELS_LIST"'; do \
+        echo "📥 Baixando $model..." && \
+        ollama pull $model; \
+    done && \
     echo "✅ Download concluído!" && \
     kill $PID'
 

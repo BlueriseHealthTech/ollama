@@ -5,7 +5,7 @@ steps:
     args:
       - '-c'
       - |
-        docker build --build-arg MODELS_LIST=qwen3:4b \
+        docker build --build-arg "MODELS_LIST=qwen3:4b qwen2.5:3b-instruct" \
                      -t gcr.io/$PROJECT_ID/ollama-custom:$COMMIT_SHA \
                      -t gcr.io/$PROJECT_ID/ollama-custom:latest .
     timeout: 2400s # 40 minutos de limite (segurança para downloads lentos)
