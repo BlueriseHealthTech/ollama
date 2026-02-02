@@ -36,8 +36,7 @@ steps:
       - '--timeout=600s' # 10 minutos
       - '--concurrency=80'
       - '--port=8080'
-      - '--set-env-vars=ENVIRONMENT=development,OLLAMA_KEEP_ALIVE=12h'
-
+      - '--set-env-vars=ENVIRONMENT=development,OLLAMA_HOST=0.0.0.0:11434,OLLAMA_KEEP_ALIVE=12h,OLLAMA_MODELS=/models'
 images:
   - 'gcr.io/$PROJECT_ID/ollama-custom:$COMMIT_SHA'
   - 'gcr.io/$PROJECT_ID/ollama-custom:latest'
