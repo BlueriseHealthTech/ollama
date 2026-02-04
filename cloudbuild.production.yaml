@@ -20,7 +20,7 @@ steps:
       - |
         docker build \
           --build-arg ENV=${_ENV} \
-          --build-arg OLLAMA_MODELS=qwen3:4b \
+          --build-arg OLLAMA_MODELS=llama3.1:8b \
           -t gcr.io/$PROJECT_ID/ollama-custom:$COMMIT_SHA \
           -t gcr.io/$PROJECT_ID/ollama-custom:latest \
           -t gcr.io/$PROJECT_ID/ollama-custom:prod-$SHORT_SHA \
