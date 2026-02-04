@@ -1,3 +1,13 @@
+substitutions:
+  _ENV: 'development'
+  _SERVICE_NAME: 'brh-ollama-dev'
+  _REGION: 'us-east4'
+  _MODELS: 'llama3.1:8b qwen2.5:3b-instruct'
+  _CPU: '6'
+  _MEMORY: '16Gi'
+  _MIN_INSTANCES: '1'
+  _MAX_INSTANCES: '3'
+
 steps:
   # --- Build da Imagem (Isso vai demorar uns 5-10 min por causa do download dos modelos) ---
   - name: 'gcr.io/cloud-builders/docker'
@@ -5,7 +15,7 @@ steps:
     args:
       - '-c'
       - |
-        docker build --build-arg "MODELS_LIST=llama3.1:8b qwen2.5:3b-instruct" \
+        docker build --build-arg "MODELS_LIST=${_MODELS}" \
                      -t gcr.io/$PROJECT_ID/ollama-custom:$COMMIT_SHA \
                      -t gcr.io/$PROJECT_ID/ollama-custom:latest .
     timeout: 2400s # 40 minutos de limite (segurança para downloads lentos)
@@ -24,20 +34,20 @@ steps:
       - 'run'
       - 'services'
       - 'update'
-      - 'brh-ollama-dev' # Nome do serviço no developer
+      - '${_SERVICE_NAME}'
       - '--image=gcr.io/$PROJECT_ID/ollama-custom:$COMMIT_SHA'
-      - '--region=us-east4'
+      - '--region=${_REGION}'
       - '--platform=managed'
       - '--ingress=internal'
-      - '--cpu=6' # Ollama precisa de CPU para responder rápido
-      - '--memory=16Gi' # qwen3:4b precisa de pelo menos 8GB, usando 16GB para folga
+      - '--cpu=${_CPU}'
+      - '--memory=${_MEMORY}'
       - '--no-cpu-throttling'
-      - '--min-instances=1' # Manter 1 instância sempre ativa
-      - '--max-instances=3'
-      - '--timeout=600s' # 10 minutos
+      - '--min-instances=${_MIN_INSTANCES}'
+      - '--max-instances=${_MAX_INSTANCES}'
+      - '--timeout=600s'
       - '--concurrency=80'
       - '--port=8080'
-      - '--set-env-vars=ENVIRONMENT=development,OLLAMA_HOST=0.0.0.0:11434,OLLAMA_KEEP_ALIVE=12h,OLLAMA_MODELS=/models'
+      - '--set-env-vars=ENVIRONMENT=${_ENV},OLLAMA_HOST=0.0.0.0:11434,OLLAMA_KEEP_ALIVE=12h,OLLAMA_MODELS=/models'
 images:
   - 'gcr.io/$PROJECT_ID/ollama-custom:$COMMIT_SHA'
   - 'gcr.io/$PROJECT_ID/ollama-custom:latest'

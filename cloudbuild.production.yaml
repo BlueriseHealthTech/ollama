@@ -5,6 +5,7 @@ substitutions:
   _ENV: 'production'
   _SERVICE_NAME: 'ollama-service'
   _REGION: 'us-east4'
+  _MODELS: 'llama3.1:8b'
   _CPU: '8'
   _MEMORY: '16Gi'
   _MIN_INSTANCES: '1'
@@ -20,7 +21,7 @@ steps:
       - |
         docker build \
           --build-arg ENV=${_ENV} \
-          --build-arg OLLAMA_MODELS=llama3.1:8b \
+          --build-arg OLLAMA_MODELS=${_MODELS} \
           -t gcr.io/$PROJECT_ID/ollama-custom:$COMMIT_SHA \
           -t gcr.io/$PROJECT_ID/ollama-custom:latest \
           -t gcr.io/$PROJECT_ID/ollama-custom:prod-$SHORT_SHA \

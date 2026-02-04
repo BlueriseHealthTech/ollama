@@ -5,6 +5,7 @@ substitutions:
   _ENV: 'sandbox'
   _SERVICE_NAME: 'ollama-service-sandbox'
   _REGION: 'us-east4'
+  _MODELS: 'llama3.1:8b'
   _CPU: '2'
   _MEMORY: '8Gi'
   _MIN_INSTANCES: '0'
@@ -20,7 +21,7 @@ steps:
       - |
         docker build \
           --build-arg ENV=${_ENV} \
-          --build-arg OLLAMA_MODELS=llama3.1:8b \
+          --build-arg OLLAMA_MODELS=${_MODELS} \
           -t gcr.io/$PROJECT_ID/ollama-custom-${_ENV}:$COMMIT_SHA \
           -t gcr.io/$PROJECT_ID/ollama-custom-${_ENV}:latest \
           -f Dockerfile .
