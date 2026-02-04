@@ -7,38 +7,39 @@ substitutions:
   _MEMORY: '16Gi'
   _MIN_INSTANCES: '1'
   _MAX_INSTANCES: '3'
+  # Ajustado para usar o Artifact Registry (padrão atual do seu projeto)
+  _REPO_PATH: 'us-east4-docker.pkg.dev/${PROJECT_ID}/cloud-run-source-deploy/brh-ollama/brh-ollama-dev'
 
 steps:
-  # --- Build da Imagem (Isso vai demorar uns 5-10 min por causa do download dos modelos) ---
+  # --- 1. Build da Imagem ---
   - name: 'gcr.io/cloud-builders/docker'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
         docker build --build-arg "MODELS_LIST=${_MODELS}" \
-                     -t gcr.io/$PROJECT_ID/ollama-custom:$COMMIT_SHA \
-                     -t gcr.io/$PROJECT_ID/ollama-custom:latest .
-    timeout: 2400s # 40 minutos de limite (segurança para downloads lentos)
+                     -t ${_REPO_PATH}:$COMMIT_SHA \
+                     -t ${_REPO_PATH}:latest .
+    timeout: 2400s 
 
-  # --- Push para o Registry ---
+  # --- 2. Push para o Artifact Registry ---
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/$PROJECT_ID/ollama-custom:$COMMIT_SHA']
+    args: ['push', '${_REPO_PATH}:$COMMIT_SHA']
 
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/$PROJECT_ID/ollama-custom:latest']
+    args: ['push', '${_REPO_PATH}:latest']
 
-  # --- Deploy no Cloud Run ---
+  # --- 3. Deploy no Cloud Run ---
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:
       - 'run'
-      - 'services'
-      - 'update'
+      - 'deploy'
       - '${_SERVICE_NAME}'
-      - '--image=gcr.io/$PROJECT_ID/ollama-custom:$COMMIT_SHA'
+      - '--image=${_REPO_PATH}:$COMMIT_SHA'
       - '--region=${_REGION}'
       - '--platform=managed'
-      - '--ingress=internal'
+      - '--ingress=all'  # Alterado para 'all' para garantir acesso (conforme seu Service YAML anterior)
       - '--cpu=${_CPU}'
       - '--memory=${_MEMORY}'
       - '--no-cpu-throttling'
@@ -48,8 +49,14 @@ steps:
       - '--concurrency=80'
       - '--port=8080'
       - '--set-env-vars=ENVIRONMENT=${_ENV},OLLAMA_HOST=0.0.0.0:11434,OLLAMA_KEEP_ALIVE=12h,OLLAMA_MODELS=/models'
+      # Nota: A VITE_API_KEY (da sua imagem) não é necessária aqui, pois este é o serviço Ollama (Backend AI), não o Frontend Vite.
+
 images:
-  - 'gcr.io/$PROJECT_ID/ollama-custom:$COMMIT_SHA'
-  - 'gcr.io/$PROJECT_ID/ollama-custom:latest'
+  - '${_REPO_PATH}:$COMMIT_SHA'
+  - '${_REPO_PATH}:latest'
 
 timeout: 3600s
+
+# --- CORREÇÃO OBRIGATÓRIA PARA O ERRO DO GATILHO ---
+options:
+  logging: CLOUD_LOGGING_ONLY
