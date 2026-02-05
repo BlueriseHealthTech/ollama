@@ -6,7 +6,7 @@ substitutions:
   _SERVICE_NAME: 'ollama-service'
   _REGION: 'us-east4'
   _MODELS: 'qwen2.5:3b-instruct'
-  _CPU: '8'
+  _CPU: '8.0'
   _MEMORY: '16Gi'
   _MIN_INSTANCES: '1'
   _MAX_INSTANCES: '10'
@@ -21,7 +21,7 @@ steps:
       - |
         docker build \
           --build-arg ENV=${_ENV} \
-          --build-arg OLLAMA_MODELS=${_MODELS} \
+          --build-arg MODELS_LIST="${_MODELS}" \
           -t gcr.io/$PROJECT_ID/ollama-custom:$COMMIT_SHA \
           -t gcr.io/$PROJECT_ID/ollama-custom:latest \
           -t gcr.io/$PROJECT_ID/ollama-custom:prod-$SHORT_SHA \
