@@ -9,7 +9,7 @@ substitutions:
   _ARTIFACT_REGISTRY: 'us-east4-docker.pkg.dev'
   _REPOSITORY: 'cloud-run-source-deploy/brh-ollama'
   _MODELS: 'qwen2.5:3b-instruct'
-  _CPU: '3'
+  _CPU: '2.0'
   _MEMORY: '6Gi'
   _MIN_INSTANCES: '0'
   _MAX_INSTANCES: '1'
