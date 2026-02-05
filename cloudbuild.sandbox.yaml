@@ -5,8 +5,9 @@ substitutions:
   _ENV: 'sandbox'
   _SERVICE_NAME: 'ollama-service-sandbox'
   _REGION: 'us-east4'
+  _MODELS: 'qwen2.5:3b-instruct'
   _CPU: '2'
-  _MEMORY: '4Gi'
+  _MEMORY: '8Gi'
   _MIN_INSTANCES: '0'
   _MAX_INSTANCES: '2'
 
@@ -20,7 +21,7 @@ steps:
       - |
         docker build \
           --build-arg ENV=${_ENV} \
-          --build-arg OLLAMA_MODELS=qwen3:4b \
+          --build-arg OLLAMA_MODELS=${_MODELS} \
           -t gcr.io/$PROJECT_ID/ollama-custom-${_ENV}:$COMMIT_SHA \
           -t gcr.io/$PROJECT_ID/ollama-custom-${_ENV}:latest \
           -f Dockerfile .
@@ -58,6 +59,8 @@ steps:
       - '--timeout=3600s'
       - '--set-env-vars=ENVIRONMENT=${_ENV},OLLAMA_KEEP_ALIVE=12h'
       - '--allow-unauthenticated' # Sandbox pode ser menos restritivo
+      - '--concurrency=80'
+      - '--port=8080'
     waitFor: ['push-sha', 'push-latest']
 
 # Imagens resultantes

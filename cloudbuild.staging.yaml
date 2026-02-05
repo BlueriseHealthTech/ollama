@@ -5,6 +5,7 @@ substitutions:
   _ENV: 'staging'
   _SERVICE_NAME: 'ollama-service-staging'
   _REGION: 'us-east4'
+  _MODELS: 'qwen2.5:3b-instruct'
   _CPU: '4'
   _MEMORY: '8Gi'
   _MIN_INSTANCES: '0'
@@ -20,7 +21,7 @@ steps:
       - |
         docker build \
           --build-arg ENV=${_ENV} \
-          --build-arg OLLAMA_MODELS=qwen3:4b \
+          --build-arg OLLAMA_MODELS=${_MODELS} \
           -t gcr.io/$PROJECT_ID/ollama-custom-${_ENV}:$COMMIT_SHA \
           -t gcr.io/$PROJECT_ID/ollama-custom-${_ENV}:latest \
           -f Dockerfile .
@@ -58,6 +59,8 @@ steps:
       - '--timeout=3600s'
       - '--set-env-vars=ENVIRONMENT=${_ENV},OLLAMA_KEEP_ALIVE=24h'
       - '--no-allow-unauthenticated' # Staging requer autenticação
+      - '--concurrency=80'
+      - '--port=8080'
     waitFor: ['push-sha', 'push-latest']
 
   # --- Teste de Health Check ---
