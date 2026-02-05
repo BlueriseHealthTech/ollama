@@ -1,15 +1,18 @@
-# Cloud Build - Staging Environment
-# Deploy para ambiente de staging/homologação
+# Cloud Build - Sandbox Environment
+# Deploy para ambiente de sandbox
 
 substitutions:
-  _ENV: 'staging'
-  _SERVICE_NAME: 'ollama-service-staging'
+  _ENV: 'sandbox'
+  _SERVICE_NAME: 'brh-ollama-sbx'
   _REGION: 'us-east4'
+  _PROJECT_ID: 'brh-sbx-479520'
+  _ARTIFACT_REGISTRY: 'us-east4-docker.pkg.dev'
+  _REPOSITORY: 'cloud-run-source-deploy/brh-ollama'
   _MODELS: 'qwen2.5:3b-instruct'
-  _CPU: '4'
-  _MEMORY: '8Gi'
+  _CPU: '1'
+  _MEMORY: '512Mi'
   _MIN_INSTANCES: '0'
-  _MAX_INSTANCES: '5'
+  _MAX_INSTANCES: '20'
 
 steps:
   # --- Build da Imagem ---
@@ -22,20 +25,20 @@ steps:
         docker build \
           --build-arg ENV=${_ENV} \
           --build-arg OLLAMA_MODELS=${_MODELS} \
-          -t gcr.io/$PROJECT_ID/ollama-custom-${_ENV}:$COMMIT_SHA \
-          -t gcr.io/$PROJECT_ID/ollama-custom-${_ENV}:latest \
+          -t ${_ARTIFACT_REGISTRY}/${_PROJECT_ID}/${_REPOSITORY}/${_SERVICE_NAME}:$COMMIT_SHA \
+          -t ${_ARTIFACT_REGISTRY}/${_PROJECT_ID}/${_REPOSITORY}/${_SERVICE_NAME}:latest \
           -f Dockerfile .
     timeout: 2400s # 40 minutos para download dos modelos
 
-  # --- Push para Container Registry ---
+  # --- Push para Artifact Registry ---
   - name: 'gcr.io/cloud-builders/docker'
     id: 'push-sha'
-    args: ['push', 'gcr.io/$PROJECT_ID/ollama-custom-${_ENV}:$COMMIT_SHA']
+    args: ['push', '${_ARTIFACT_REGISTRY}/${_PROJECT_ID}/${_REPOSITORY}/${_SERVICE_NAME}:$COMMIT_SHA']
     waitFor: ['build-image']
 
   - name: 'gcr.io/cloud-builders/docker'
     id: 'push-latest'
-    args: ['push', 'gcr.io/$PROJECT_ID/ollama-custom-${_ENV}:latest']
+    args: ['push', '${_ARTIFACT_REGISTRY}/${_PROJECT_ID}/${_REPOSITORY}/${_SERVICE_NAME}:latest']
     waitFor: ['build-image']
 
   # --- Deploy no Cloud Run ---
@@ -44,21 +47,20 @@ steps:
     entrypoint: gcloud
     args:
       - 'run'
-      - 'services'
-      - 'update'
+      - 'deploy'
       - '${_SERVICE_NAME}'
-      - '--image=gcr.io/$PROJECT_ID/ollama-custom-${_ENV}:$COMMIT_SHA'
+      - '--image=${_ARTIFACT_REGISTRY}/${_PROJECT_ID}/${_REPOSITORY}/${_SERVICE_NAME}:$COMMIT_SHA'
       - '--region=${_REGION}'
       - '--platform=managed'
+      - '--project=${_PROJECT_ID}'
       - '--ingress=internal'
       - '--cpu=${_CPU}'
       - '--memory=${_MEMORY}'
-      - '--no-cpu-throttling'
       - '--min-instances=${_MIN_INSTANCES}'
       - '--max-instances=${_MAX_INSTANCES}'
-      - '--timeout=3600s'
+      - '--timeout=300'
       - '--set-env-vars=ENVIRONMENT=${_ENV},OLLAMA_KEEP_ALIVE=24h'
-      - '--no-allow-unauthenticated' # Staging requer autenticação
+      - '--no-allow-unauthenticated'
       - '--concurrency=80'
       - '--port=8080'
     waitFor: ['push-sha', 'push-latest']
@@ -78,8 +80,8 @@ steps:
 
 # Imagens resultantes
 images:
-  - 'gcr.io/$PROJECT_ID/ollama-custom-${_ENV}:$COMMIT_SHA'
-  - 'gcr.io/$PROJECT_ID/ollama-custom-${_ENV}:latest'
+  - '${_ARTIFACT_REGISTRY}/${_PROJECT_ID}/${_REPOSITORY}/${_SERVICE_NAME}:$COMMIT_SHA'
+  - '${_ARTIFACT_REGISTRY}/${_PROJECT_ID}/${_REPOSITORY}/${_SERVICE_NAME}:latest'
 
 # Configurações globais
 timeout: 3600s
