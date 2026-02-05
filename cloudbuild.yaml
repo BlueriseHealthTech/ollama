@@ -2,13 +2,14 @@ substitutions:
   _ENV: 'development'
   _SERVICE_NAME: 'brh-ollama-dev'
   _REGION: 'us-east4'
+  _PROJECT_ID: 'brh-dev-469211'
   _MODELS: 'qwen2.5:3b-instruct'
   _CPU: '6'
   _MEMORY: '16Gi'
   _MIN_INSTANCES: '1'
   _MAX_INSTANCES: '3'
   # Ajustado para usar o Artifact Registry (padrão atual do seu projeto)
-  _REPO_PATH: 'us-east4-docker.pkg.dev/${PROJECT_ID}/cloud-run-source-deploy/brh-ollama/brh-ollama-dev'
+  _REPO_PATH: 'us-east4-docker.pkg.dev/brh-dev-469211/cloud-run-source-deploy/brh-ollama/brh-ollama-dev'
 
 steps:
   # --- 1. Build da Imagem ---
@@ -39,17 +40,17 @@ steps:
       - '--image=${_REPO_PATH}:$COMMIT_SHA'
       - '--region=${_REGION}'
       - '--platform=managed'
+      - '--project=${_PROJECT_ID}'
       - '--ingress=all'  # Alterado para 'all' para garantir acesso (conforme seu Service YAML anterior)
       - '--cpu=${_CPU}'
       - '--memory=${_MEMORY}'
       - '--no-cpu-throttling'
       - '--min-instances=${_MIN_INSTANCES}'
       - '--max-instances=${_MAX_INSTANCES}'
-      - '--timeout=600s'
+      - '--timeout=600'
       - '--concurrency=80'
       - '--port=8080'
       - '--set-env-vars=ENVIRONMENT=${_ENV},OLLAMA_HOST=0.0.0.0:11434,OLLAMA_KEEP_ALIVE=12h,OLLAMA_MODELS=/models'
-      # Nota: A VITE_API_KEY (da sua imagem) não é necessária aqui, pois este é o serviço Ollama (Backend AI), não o Frontend Vite.
 
 images:
   - '${_REPO_PATH}:$COMMIT_SHA'
