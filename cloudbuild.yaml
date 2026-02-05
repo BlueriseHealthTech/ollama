@@ -4,7 +4,7 @@ substitutions:
   _REGION: 'us-east4'
   _PROJECT_ID: 'brh-dev-469211'
   _MODELS: 'qwen2.5:3b-instruct'
-  _CPU: '6'
+  _CPU: '6.0'
   _MEMORY: '16Gi'
   _MIN_INSTANCES: '1'
   _MAX_INSTANCES: '3'
