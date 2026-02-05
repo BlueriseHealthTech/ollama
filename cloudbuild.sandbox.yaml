@@ -5,7 +5,7 @@ substitutions:
   _ENV: 'sandbox'
   _SERVICE_NAME: 'ollama-service-sandbox'
   _REGION: 'us-east4'
-  _MODELS: 'llama3.1:8b'
+  _MODELS: 'qwen2.5:3b-instruct'
   _CPU: '2'
   _MEMORY: '8Gi'
   _MIN_INSTANCES: '0'

@@ -2,7 +2,7 @@ substitutions:
   _ENV: 'development'
   _SERVICE_NAME: 'brh-ollama-dev'
   _REGION: 'us-east4'
-  _MODELS: 'llama3.1:8b qwen2.5:3b-instruct'
+  _MODELS: 'qwen2.5:3b-instruct'
   _CPU: '6'
   _MEMORY: '16Gi'
   _MIN_INSTANCES: '1'
