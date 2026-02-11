@@ -4,12 +4,12 @@ substitutions:
   _REGION: 'us-east4'
   _PROJECT_ID: 'brh-dev-469211'
   _MODELS: 'qwen2.5:3b-instruct'
-  _CPU: '6.0'
-  _MEMORY: '8Gi'
+  _CPU: '4'
+  _MEMORY: '16Gi'
   _MIN_INSTANCES: '1'
-  _MAX_INSTANCES: '3'
-  # Ajustado para usar o Artifact Registry (padrão atual do seu projeto)
+  _MAX_INSTANCES: '1'
   _REPO_PATH: 'us-east4-docker.pkg.dev/brh-dev-469211/cloud-run-source-deploy/brh-ollama/brh-ollama-dev'
+  _TAG: '${COMMIT_SHA:-latest}'
 
 steps:
   # --- 1. Build da Imagem ---
@@ -18,46 +18,56 @@ steps:
     args:
       - '-c'
       - |
+        TAG="${COMMIT_SHA:-latest}"
         docker build --build-arg "MODELS_LIST=${_MODELS}" \
-                     -t ${_REPO_PATH}:$COMMIT_SHA \
+                     -t ${_REPO_PATH}:$$TAG \
                      -t ${_REPO_PATH}:latest .
     timeout: 2400s 
 
   # --- 2. Push para o Artifact Registry ---
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', '${_REPO_PATH}:$COMMIT_SHA']
-
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', '${_REPO_PATH}:latest']
-
-  # --- 3. Deploy no Cloud Run ---
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: gcloud
+    entrypoint: 'bash'
     args:
-      - 'run'
-      - 'deploy'
-      - '${_SERVICE_NAME}'
-      - '--image=${_REPO_PATH}:$COMMIT_SHA'
-      - '--region=${_REGION}'
-      - '--platform=managed'
-      - '--project=${_PROJECT_ID}'
-      - '--ingress=all'  # Alterado para 'all' para garantir acesso (conforme seu Service YAML anterior)
-      - '--cpu=${_CPU}'
-      - '--memory=${_MEMORY}'
-      - '--no-cpu-throttling'
-      - '--min-instances=${_MIN_INSTANCES}'
-      - '--max-instances=${_MAX_INSTANCES}'
-      - '--timeout=600'
-      - '--concurrency=80'
-      - '--port=8080'
-      - '--set-env-vars=ENVIRONMENT=${_ENV},OLLAMA_HOST=0.0.0.0:11434,OLLAMA_KEEP_ALIVE=12h,OLLAMA_MODELS=/models'
+      - '-c'
+      - |
+        TAG="${COMMIT_SHA:-latest}"
+        docker push ${_REPO_PATH}:$$TAG
+        docker push ${_REPO_PATH}:latest
+
+  # --- 3. Deploy no Cloud Run (GPU) ---
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        TAG="${COMMIT_SHA:-latest}"
+        gcloud run deploy ${_SERVICE_NAME} \
+          --image=${_REPO_PATH}:$$TAG \
+          --region=${_REGION} \
+          --platform=managed \
+          --project=${_PROJECT_ID} \
+          --execution-environment=gen2 \
+          --ingress=all \
+          --cpu=${_CPU} \
+          --memory=${_MEMORY} \
+          --gpu=1 \
+          --gpu-type=nvidia-l4 \
+          --no-gpu-zonal-redundancy \
+          --no-cpu-throttling \
+          --cpu-boost \
+          --min-instances=${_MIN_INSTANCES} \
+          --max-instances=${_MAX_INSTANCES} \
+          --timeout=600 \
+          --concurrency=4 \
+          --port=8080 \
+          --set-env-vars=ENVIRONMENT=${_ENV},OLLAMA_KEEP_ALIVE=12h,OLLAMA_MODELS=/models,OLLAMA_NUM_PARALLEL=4,OLLAMA_MAX_LOADED_MODELS=1,OLLAMA_FLASH_ATTENTION=1,OLLAMA_KV_CACHE_TYPE=q8_0,OLLAMA_NUM_GPU=999,OLLAMA_CONTEXT_LENGTH=8192 \
+          --startup-probe \
+          tcpSocket.port=8080,initialDelaySeconds=0,failureThreshold=24,timeoutSeconds=10,periodSeconds=10
 
 images:
-  - '${_REPO_PATH}:$COMMIT_SHA'
   - '${_REPO_PATH}:latest'
 
 timeout: 3600s
 
-# --- CORREÇÃO OBRIGATÓRIA PARA O ERRO DO GATILHO ---
 options:
   logging: CLOUD_LOGGING_ONLY
