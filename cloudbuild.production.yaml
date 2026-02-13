@@ -1,14 +1,17 @@
+# Cloud Build - Production Environment
+# Deploy para ambiente de produção
+
 substitutions:
-  _ENV: 'development'
-  _SERVICE_NAME: 'brh-ollama-dev'
+  _ENV: 'production'
+  _SERVICE_NAME: 'ollama-service'
   _REGION: 'us-east4'
-  _PROJECT_ID: 'brh-dev-469211'
+  _PROJECT_ID: 'brh-prd-XXXXXX' # TODO: Ajustar com o Project ID de produção
   _MODELS: 'qwen2.5:3b-instruct'
   _CPU: '4'
   _MEMORY: '16Gi'
   _MIN_INSTANCES: '1'
-  _MAX_INSTANCES: '1'
-  _REPO_PATH: 'us-east4-docker.pkg.dev/brh-dev-469211/cloud-run-source-deploy/brh-ollama/brh-ollama-dev'
+  _MAX_INSTANCES: '3'
+  _REPO_PATH: 'us-east4-docker.pkg.dev/brh-prd-XXXXXX/cloud-run-source-deploy/brh-ollama/ollama-service' # TODO: Ajustar com o Project ID de produção
   _TAG: '${COMMIT_SHA:-latest}'
 
 steps:
@@ -22,7 +25,7 @@ steps:
         docker build --build-arg "MODELS_LIST=${_MODELS}" \
                      -t ${_REPO_PATH}:$$TAG \
                      -t ${_REPO_PATH}:latest .
-    timeout: 2400s 
+    timeout: 2400s
 
   # --- 2. Push para o Artifact Registry ---
   - name: 'gcr.io/cloud-builders/docker'
@@ -47,7 +50,7 @@ steps:
           --platform=managed \
           --project=${_PROJECT_ID} \
           --execution-environment=gen2 \
-          --ingress=all \
+          --ingress=internal \
           --cpu=${_CPU} \
           --memory=${_MEMORY} \
           --gpu=1 \
@@ -60,7 +63,8 @@ steps:
           --timeout=600 \
           --concurrency=4 \
           --port=8080 \
-          --set-env-vars=ENVIRONMENT=${_ENV},OLLAMA_KEEP_ALIVE=12h,OLLAMA_MODELS=/models,OLLAMA_NUM_PARALLEL=4,OLLAMA_MAX_LOADED_MODELS=1,OLLAMA_FLASH_ATTENTION=1,OLLAMA_KV_CACHE_TYPE=q8_0,OLLAMA_NUM_GPU=999,OLLAMA_CONTEXT_LENGTH=8192 \
+          --no-allow-unauthenticated \
+          --set-env-vars=ENVIRONMENT=${_ENV},OLLAMA_KEEP_ALIVE=24h,OLLAMA_MODELS=/models,OLLAMA_NUM_PARALLEL=4,OLLAMA_MAX_LOADED_MODELS=1,OLLAMA_FLASH_ATTENTION=1,OLLAMA_KV_CACHE_TYPE=q8_0,OLLAMA_NUM_GPU=999,OLLAMA_CONTEXT_LENGTH=8192 \
           --startup-probe \
           tcpSocket.port=8080,initialDelaySeconds=0,failureThreshold=24,timeoutSeconds=10,periodSeconds=10
 
